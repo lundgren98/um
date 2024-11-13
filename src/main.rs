@@ -151,13 +151,9 @@ impl Machine {
         instruction
     }
     fn is_free(&self, addr: usize) -> bool {
-        self.allocated
-            .iter()
-            .find(|x| **x == addr)
-            .is_none()
+        self.allocated.iter().find(|x| **x == addr).is_none()
     }
-    fn alloc(&mut self, b: usize, c: usize) {
-        let size = dbg!(self.r[c]) as usize;
+    fn alloc(&mut self, size: usize) -> u32 {
         let all_addresses = HashSet::<usize>::from_iter(1..self.arrays.len());
         let free_addresses = &all_addresses - &(self.allocated.iter().cloned().collect());
         let free_addr = free_addresses.iter().find(|_| true); // Just give me an element
@@ -177,7 +173,25 @@ impl Machine {
                 i
             }
         };
-        self.r[b] = dbg!(addr) as u32;
+        dbg!(addr) as u32
+    }
+    fn free(&mut self, addr: usize) {
+        if addr == 0 {
+            panic!("Cannot abandon array 0");
+        }
+        match self.allocated.iter().enumerate().find(|(_, &a)| a == addr) {
+            None => panic!("Cannot abandon unallocated array {}", addr),
+            Some((i, _)) => {
+                self.allocated.remove(i);
+            }
+        }
+        let size = self.arrays[addr].len();
+        self.arrays[addr].resize(0, 0);
+        assert_eq!(self.arrays[addr].len(), 0);
+        if size == 0 {
+            println!("-------\nZERO SIZE FREE OK\n-------");
+            sleep(time::Duration::from_secs(1));
+        }
     }
     fn act(&mut self) {
         let raw_instruction = self.next();
@@ -197,9 +211,7 @@ impl Machine {
 
         match op {
             Op::Move => {
-                if r[c] == 0 {
-                    return;
-                }
+                if r[c] == 0 { return; }
                 r[a] = dbg!(r[b]);
             }
             Op::Index => {
@@ -224,23 +236,12 @@ impl Machine {
                 exit(0);
             }
             Op::Alloc => {
-                self.alloc(b,c);
+                let size = r[c] as usize;
+                self.r[b] = self.alloc(size);
             }
             Op::Aband => {
                 let addr = dbg!(r[c]) as usize;
-                if addr == 0 {
-                    panic!("Cannot abandon array 0");
-                }
-                if self.allocated.iter().find(|&&i| i == addr).is_none() {
-                    panic!("Cannot abandon unallocated array {}", addr);
-                }
-                let size = mem[addr].len();
-                mem[addr].resize(0, 0);
-                assert_eq!(mem[addr].len(), 0);
-                if size == 0 {
-                    println!("-------\nZERO SIZE FREE OK\n-------");
-                    sleep(time::Duration::from_secs(1));
-                }
+                self.free(addr);
             }
             Op::Output => {
                 println!("-------\nOUTPUTTING\n-------");
