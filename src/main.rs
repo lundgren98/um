@@ -21,6 +21,7 @@ const REG_B: u32 = 7 << REG_B_OFFSET;
 const REG_C: u32 = 7 << REG_C_OFFSET;
 const VALUE: u32 = !(OPERATOR | SPEC_A);
 
+#[derive(Debug)]
 struct Instruction {
     op: u8,
     a: usize,
@@ -31,6 +32,22 @@ struct Instruction {
 }
 
 impl Instruction {
+    /*
+     *  op   sa                     a       c
+     *  |    |                      |       |
+     * vvvv vvv                    v vv    vvv
+     * 1100 0001 0000 0000 0000 0000 0000 1101
+     *                                 ^^ ^
+     *                                  |
+     *                                  b
+     *
+     *
+     * op = 12
+     * sa = 0
+     * a = 0
+     * b = 1
+     * c = 5
+     */
     fn from_num(n: u32) -> Self {
         let op = ((n & OPERATOR) >> OP_OFFSET) as u8;
         let a = ((n & REG_A) >> REG_A_OFFSET) as usize;
@@ -103,9 +120,12 @@ impl Machine {
         self.arrays[0][self.ip]
     }
     fn act(&mut self) {
-        let i = Instruction::from_num(self.get_instruction());
+        let raw_instruction = self.get_instruction();
+        let i = Instruction::from_num(raw_instruction);
+        println!("{:x}", raw_instruction);
+        println!("{i:?}");
         self.next();
-        let op = Op::from_num(i.op); 
+        let op = Op::from_num(i.op);
         print!("{op:?}\t");
         match op {
             Op::Move => {
@@ -113,37 +133,38 @@ impl Machine {
                     println!("noop");
                     return;
                 }
-                self.r[i.a] = self.r[i.b];
                 println!("r{} = r{}", i.a, i.b);
+                self.r[i.a] = self.r[i.b];
             }
             Op::Index => {
-                self.r[i.a] = self.arrays[self.r[i.b] as usize][self.r[i.c] as usize];
                 println!("r{} = arr[r{}][r{}]", i.a, i.b, i.c);
+                self.r[i.a] = self.arrays[self.r[i.b] as usize][self.r[i.c] as usize];
             }
             Op::Amend => {
-                self.arrays[self.r[i.a] as usize][self.r[i.b] as usize] = self.r[i.c];
                 println!("arr[r{}][r{}] = r{}", i.a, i.b, i.c);
+                self.arrays[self.r[i.a] as usize][self.r[i.b] as usize] = self.r[i.c];
             }
             Op::Add => {
-                self.r[i.a] = self.r[i.b] + self.r[i.c];
                 println!("r{} = r{} + r{}", i.a, i.b, i.c);
+                self.r[i.a] = self.r[i.b].wrapping_add(self.r[i.c]);
             }
             Op::Mult => {
-                self.r[i.a] = self.r[i.b] * self.r[i.c];
                 println!("r{} = r{} * r{}", i.a, i.b, i.c);
+                self.r[i.a] = self.r[i.b].wrapping_mul(self.r[i.c]);
             }
             Op::Div => {
-                self.r[i.a] = self.r[i.b] / self.r[i.c];
                 println!("r{} = r{} / r{}", i.a, i.b, i.c);
+                self.r[i.a] = self.r[i.b] / self.r[i.c];
             }
             Op::NotAnd => {
-                self.r[i.a] = !(self.r[i.b] & self.r[i.c]);
                 println!("r{} = !(r{} & r{})", i.a, i.b, i.c);
+                self.r[i.a] = !(self.r[i.b] & self.r[i.c]);
             }
             Op::Halt => {
                 exit(0);
             }
             Op::Alloc => {
+                println!("r{} = malloc(r{})", i.b, i.c);
                 let size = self.r[i.c] as usize;
                 let mem = &mut self.arrays;
                 let arr = mem.into_iter().enumerate().find(|(_, x)| x.is_empty());
@@ -152,24 +173,23 @@ impl Machine {
                         let mut v = Vec::new();
                         v.resize(size, 0);
                         mem.push(v);
-                        mem.len()
+                        mem.len() - 1
                     }
                     Some((index, v)) => {
                         v.resize(size, 0);
-                        index + 1
+                        index
                     }
                 };
                 self.r[i.b] = addr as u32;
-                println!("r{} = malloc(r{})", i.b, i.c);
             }
             Op::Aband => {
+                println!("free r{}", i.c);
                 let mem = &mut self.arrays;
                 let addr = self.r[i.c] as usize;
                 if addr == 0 {
                     panic!();
                 }
-                mem[addr - 1].resize(0, 0);
-                println!("free r{}", i.c);
+                mem[addr].resize(0, 0);
             }
             Op::Output => {
                 let c = self.r[i.c];
@@ -181,22 +201,26 @@ impl Machine {
                 print!("{print_me}");
             }
             Op::Input => {
+                println!("r{} = input", i.c);
                 let mut buf = [0u8; 1];
                 self.r[i.c] = match std::io::stdin().read(&mut buf) {
-                    Ok(_) => buf[0] as u32,
                     Err(_) => 0xffff_ffff,
+                    Ok(0) => 0xffff_ffff,
+                    Ok(_) => buf[0] as u32,
                 };
-                println!("r{} = input", i.c);
             }
             Op::Load => {
+                println!(
+                    "jmp arr[r{}][r{}] ({}:{})",
+                    i.b, i.c, self.r[i.b], self.r[i.c]
+                );
                 let new_program = self.arrays[self.r[i.b] as usize].clone();
                 self.arrays[0] = new_program;
                 self.ip = self.r[i.c] as usize;
-                println!("jmp arr[r{}][r{}]", i.b, i.c);
             }
             Op::Orth => {
-                self.r[i.sa] = i.value;
                 println!("r{} = {}", i.sa, i.value);
+                self.r[i.sa] = i.value;
             }
         }
     }
@@ -204,11 +228,10 @@ impl Machine {
         loop {
             print!("{}\t| ", self.ip);
             self.act();
-            sleep(std::time::Duration::from_millis(100));
+            sleep(std::time::Duration::from_millis(50));
         }
     }
 }
-
 
 fn align(input: Vec<u8>) -> Vec<u32> {
     let aligned: Vec<u32> = input
@@ -226,7 +249,10 @@ fn align(input: Vec<u8>) -> Vec<u32> {
 
 fn fuse(aligned: Vec<u32>) -> Vec<u32> {
     let program: Vec<u32> = (0..aligned.len() / 4)
-        .map(|i| aligned[i..i + 4].into_iter().sum())
+        .map(|i| {
+            let fourth = i * 4;
+            aligned[fourth..fourth + 4].into_iter().sum()
+        })
         .collect();
     program
 }
@@ -238,7 +264,7 @@ fn get_program(input: Vec<u8>) -> Vec<u32> {
 }
 
 fn main() {
-    let mut source= Vec::<u8>::new();
+    let mut source = Vec::<u8>::new();
     std::io::stdin()
         .read_to_end(&mut source)
         .expect("Could not read input");
@@ -263,23 +289,42 @@ mod tests {
 
     #[test]
     fn test_align() {
-        let source: Vec<u8> = vec![0xde, 0xad, 0xbe, 0xef];
+        let source: Vec<u8> = vec![0xde, 0xad, 0xbe, 0xef, 0xba, 0xbe, 0xca, 0xfe];
         let result = align(source);
-        assert_eq!(result, vec![0xde000000, 0x00ad0000, 0x0000be00, 0x000000ef]);
+        assert_eq!(
+            result,
+            vec![
+                0xde000000, 0x00ad0000, 0x0000be00, 0x000000ef, 0xba000000, 0x00be0000, 0x0000ca00,
+                0x000000fe,
+            ]
+        );
     }
 
     #[test]
     fn test_fuse() {
-        let nums: Vec<u32> = vec![0xde000000, 0x00ad0000, 0x0000be00, 0x000000ef];
-        let program = fuse(nums);
-        let expected: u32 =0xdeadbeef;
-        assert_eq!(format!("{:x}", program[0]), format!("{:x}", expected));
+        let nums: Vec<u32> = vec![
+            0xde000000, 0x00ad0000, 0x0000be00, 0x000000ef, 0xba000000, 0x00be0000, 0x0000ca00,
+            0x000000fe,
+        ];
+        let got = fuse(nums);
+        let expected: Vec<u32> = vec![0xdeadbeef, 0xbabecafe];
+        assert_eq!(got, expected);
     }
 
     #[test]
     fn parse_program() {
-        let source: Vec<u8> = vec![0xde, 0xad, 0xbe, 0xef];
-        let program = get_program(source);
-        assert_eq!(program[0], 0xdeadbeef);
+        let source: Vec<u8> = vec![0xde, 0xad, 0xbe, 0xef, 0xba, 0xbe, 0xca, 0xfe];
+        let got = get_program(source);
+        let expected: Vec<u32> = vec![0xdeadbeef, 0xbabecafe];
+        assert_eq!(got, expected);
+    }
+
+    #[test]
+    fn test_value() {
+        assert_eq!(VALUE, 0x1FFFFFF)
+    }
+    #[test]
+    fn test_operator() {
+        assert_eq!(OPERATOR, 0xF000_0000)
     }
 }
