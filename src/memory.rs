@@ -33,7 +33,6 @@ impl Memory {
                 }
                 let v = vec![0u32; size];
                 self.mem.push(v);
-                self.allocated.push(len);
                 len
             }
             Some(&i) => {
@@ -41,9 +40,12 @@ impl Memory {
                 i
             }
         };
-        dbg!(addr) as u32
+        self.allocated.push(addr);
+        // println!("{} = alloc({})", addr, size);
+        addr as u32
     }
     pub fn free(&mut self, addr: usize) {
+        // println!("free({})", addr);
         if addr == 0 {
             panic!("Cannot abandon array 0");
         }

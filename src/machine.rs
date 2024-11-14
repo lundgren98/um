@@ -7,7 +7,7 @@ use crate::memory::Memory;
 use crate::instruction::Instruction;
 
 pub struct Machine {
-    arrays: Memory, // program "array 0"
+    mem: Memory, // program "array 0"
     ip: usize,
     r: Registers,
 }
@@ -16,72 +16,70 @@ impl Machine {
     /* PUBLIC */
     pub fn new() -> Self {
         Self {
-            arrays: Memory::new(), // program "array 0"
+            mem: Memory::new(), // program "array 0"
             ip: 0,
             r: [0.into(); 8].into(),
         }
     }
     pub fn load(&mut self, program: Program) {
-        if self.arrays.len() < 1 {
-            self.arrays.alloc(0);
+        if self.mem.len() < 1 {
+            self.mem.alloc(0);
         }
-        self.arrays[0] = program.into();
+        self.mem[0] = program.into();
     }
     pub fn run(&mut self) {
         loop {
-            print!("{}\t| ", self.ip);
+            // print!("{}\t| ", self.ip);
             self.act();
-            // sleep(std::time::Duration::from_millis(50));
+            // std::thread::sleep(std::time::Duration::from_millis(50));
         }
     }
 
     /* PRIVATE */
-    fn peek(&self) -> u32 {
-        self.arrays[0][self.ip]
+    fn peek(&self) -> Instruction {
+        Instruction::from_num(self.mem[0][self.ip])
     }
-    fn next(&mut self) -> u32 {
+    fn next(&mut self) -> Instruction {
         let instruction = self.peek();
         self.ip += 1;
         instruction
     }
     fn act(&mut self) {
-        let raw_instruction = self.next();
-        let i = Instruction::from_num(raw_instruction);
+        let i= self.next();
         // println!("{:#010x}", raw_instruction);
         // println!("{i:?}");
-        println!("{}", i.as_pseudo_assembly());
-        let op = i.op;
-        // print!("{op:?}\t");
+        // println!("{}", i.as_pseudo_assembly());
+        // print!("{i.op:?}\t");
 
         // for ease of type
         let r = &mut self.r;
         let a = i.a;
         let b = i.b;
         let c = i.c;
-        let mem = &mut self.arrays;
+        let mem = &mut self.mem;
 
-        match op {
+        match i.op {
             Op::Move => {
                 if r[c] == 0.into() { return; }
-                r[a] = dbg!(r[b]);
+                r[a] = r[b];
             }
             Op::Index => {
-                r[a] = dbg!(mem[r[b]][r[c]]).into();
+                r[a] = mem[r[b]][r[c]].into();
             }
             Op::Amend => {
-                mem[r[a]][r[b]] = dbg!(r[c]).into();
+                mem[r[a]][r[b]] = r[c].into();
             }
             Op::Add => {
-                r[a] = dbg!(r[b] + r[c]);
+                r[a] = r[b] + r[c];
             }
             Op::Mult => {
-                r[a] = dbg!(r[b] * r[c]);
+                r[a] = r[b] * r[c];
             }
             Op::Div => {
-                r[a] = dbg!(r[b] / r[c]);
+                r[a] = r[b] / r[c];
             }
             Op::NotAnd => {
-                r[a] = dbg!(!(r[b] & r[c]));
+                r[a] = !(r[b] & r[c]);
             }
             Op::Halt => {
                 exit(0);
@@ -91,7 +89,7 @@ impl Machine {
                 self.r[b] = mem.alloc(size).into();
             }
             Op::Aband => {
-                let addr: usize = dbg!(r[c]).into();
+                let addr: usize = (r[c]).into();
                 mem.free(addr);
             }
             Op::Output => {
@@ -112,12 +110,12 @@ impl Machine {
                 }.into();
             }
             Op::Load => {
-                let new_program = mem[dbg!(r[b])].clone();
+                let new_program = mem[r[b]].clone();
                 mem[0] = new_program;
                 self.ip = r[c].into();
             }
             Op::Orth => {
-                r[i.sa] = dbg!(i.value).into();
+                r[i.sa] = i.value.into();
             }
         }
     }
