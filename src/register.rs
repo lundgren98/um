@@ -1,6 +1,7 @@
 use std::ops::{Add, BitAnd, Div, Index, IndexMut, Mul, Not};
 use std::fmt::Display;
 use crate::memory::Platter;
+use crate::memory::MemoryAddress;
 
 type RegisterType = Platter;
 #[derive(Debug, Clone, Copy, PartialEq, PartialOrd)]
@@ -25,7 +26,7 @@ impl Into<RegisterType> for Register {
         self.0
     }
 }
-/* Is this necessary ???? */
+
 impl Into<usize> for Register {
     fn into(self) -> usize {
         self.0 as usize

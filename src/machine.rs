@@ -3,7 +3,7 @@ use std::{io::Read, process::exit};
 use crate::op::Op;
 use crate::register::Registers;
 use crate::program::Program;
-use crate::memory::Memory;
+use crate::memory::{Memory, MemoryAddress};
 use crate::instruction::Instruction;
 
 pub struct Machine {
@@ -89,7 +89,7 @@ impl Machine {
                 self.r[b] = mem.alloc(size).into();
             }
             Op::Aband => {
-                let addr: usize = r[c].into();
+                let addr: MemoryAddress = r[c].into();
                 mem.free(addr);
             }
             Op::Output => {
