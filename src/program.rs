@@ -59,8 +59,7 @@ impl Into<ProgramType> for Program {
 
 #[cfg(test)]
 mod tests {
-    use super::program::*;
-    use super::Program;
+    use super::*;
 
     #[test]
     fn test_align() {

@@ -5,11 +5,13 @@ type RegisterType = u32;
 #[derive(Debug, Clone, Copy, PartialEq, PartialOrd)]
 pub struct Register(RegisterType);
 
-type RegistersType = [Register; 8];
+const NUMBER_OF_REGISTERS: usize = 8;
+type RegistersType = [Register; NUMBER_OF_REGISTERS];
 pub struct Registers(RegistersType);
 
+type RegisterIndicatorType = u8;
 #[derive(Debug)]
-pub struct RegisterIndicator(u8);
+pub struct RegisterIndicator(RegisterIndicatorType);
 
 /* Register */
 impl From<RegisterType> for Register {
@@ -22,6 +24,7 @@ impl Into<RegisterType> for Register {
         self.0
     }
 }
+/* Is this necessary ???? */
 impl Into<usize> for Register {
     fn into(self) -> usize {
         self.0 as usize
@@ -62,10 +65,9 @@ impl Not for Register {
 impl Registers {
     pub fn new() -> Self {
         let zero: Register = 0.into();
-        Registers([zero; 8])
+        Registers([zero; NUMBER_OF_REGISTERS])
     }
 }
-
 impl From<RegistersType> for Registers {
     fn from(n: RegistersType) -> Self {
         Registers(n)
@@ -74,14 +76,14 @@ impl From<RegistersType> for Registers {
 impl Index<RegisterIndicator> for Registers {
     type Output = Register;
     fn index(&self, index: RegisterIndicator) -> &Self::Output {
-        let iu8: u8 = index.into();
-        &self.0[iu8 as usize]
+        let i: RegisterIndicatorType = index.into();
+        &self.0[i as usize]
     }
 }
 impl IndexMut<RegisterIndicator> for Registers {
     fn index_mut(&mut self, index: RegisterIndicator) -> &mut Self::Output {
-        let iu8: u8 = index.into();
-        &mut self.0[iu8 as usize]
+        let i: RegisterIndicatorType = index.into();
+        &mut self.0[i as usize]
     }
 }
 
@@ -91,8 +93,8 @@ impl From<u32> for RegisterIndicator {
         Self(n as u8)
     }
 }
-impl Into<u8> for RegisterIndicator {
-    fn into(self) -> u8 {
+impl Into<RegisterIndicatorType> for RegisterIndicator {
+    fn into(self) -> RegisterIndicatorType {
         self.0
     }
 }
