@@ -59,6 +59,13 @@ impl Not for Register {
 }
 
 /* Registers */
+impl Registers {
+    pub fn new() -> Self {
+        let zero: Register = 0.into();
+        Registers([zero; 8])
+    }
+}
+
 impl From<RegistersType> for Registers {
     fn from(n: RegistersType) -> Self {
         Registers(n)

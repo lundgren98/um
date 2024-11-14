@@ -18,7 +18,7 @@ impl Machine {
         Self {
             mem: Memory::new(), // program "array 0"
             ip: 0,
-            r: [0.into(); 8].into(),
+            r: Registers::new(),
         }
     }
     pub fn load(&mut self, program: Program) {
@@ -89,7 +89,7 @@ impl Machine {
                 self.r[b] = mem.alloc(size).into();
             }
             Op::Aband => {
-                let addr: usize = (r[c]).into();
+                let addr: usize = r[c].into();
                 mem.free(addr);
             }
             Op::Output => {
@@ -110,9 +110,9 @@ impl Machine {
                 }.into();
             }
             Op::Load => {
-                let new_program = mem[r[b]].clone();
-                mem[0] = new_program;
-                self.ip = r[c].into();
+                let new_program: Program = mem[r[b]].clone().into();
+                self.load(new_program);
+                self.ip = self.r[c].into();
             }
             Op::Orth => {
                 r[i.sa] = i.value.into();
