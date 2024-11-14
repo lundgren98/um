@@ -1,7 +1,8 @@
 use std::ops::{Add, BitAnd, Div, Index, IndexMut, Mul, Not};
 use std::fmt::Display;
+use crate::memory::Platter;
 
-type RegisterType = u32;
+type RegisterType = Platter;
 #[derive(Debug, Clone, Copy, PartialEq, PartialOrd)]
 pub struct Register(RegisterType);
 

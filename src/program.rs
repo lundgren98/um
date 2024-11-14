@@ -1,41 +1,39 @@
-/* sizes in bits */
-const PLATTER_SIZE: u32 = 32;
-const OP_SIZE: u32 = 4;
-/* offsets */
-const OP_OFFSET: u32 = PLATTER_SIZE - OP_SIZE;
+use crate::memory::ArrayOfPlatters;
+use crate::memory::Platter;
 
-pub fn align(input: Vec<u8>) -> Vec<u32> {
-    let aligned: Vec<u32> = input
-        .into_iter()
+pub type Source = Vec<u8>;
+const PLATTER_SIZE: usize = 4;
+pub type Partition = [u8; PLATTER_SIZE];
+
+fn parition(source: Source) -> Vec<Partition> {
+    (0..source.len() / PLATTER_SIZE).map(|i| {
+        let start = PLATTER_SIZE * i;
+        let end = PLATTER_SIZE * (i + 1);
+        let range = start..end;
+        let p: Partition = source[range].try_into().unwrap();
+        p
+    }).collect()
+}
+
+fn big_endian(p: Partition) -> Platter {
+    p.map(|x|x as Platter)
+        .iter()
+        .rev()
         .enumerate()
-        .map(|(i, c)| {
-            let offset = ((3 - (i % 4)) % 4) * 8;
-            assert!(offset < OP_OFFSET as usize);
-            let aligned = (c as u32) << offset;
-            aligned
-        })
-        .collect();
-    aligned
+        .map(|(i,x): (usize, &Platter)| x << (i * 8))
+        .sum()
 }
 
-pub fn fuse(aligned: Vec<u32>) -> Vec<u32> {
-    let program: Vec<u32> = (0..aligned.len() / 4)
-        .map(|i| {
-            let fourth = i * 4;
-            aligned[fourth..fourth + 4].into_iter().sum()
-        })
-        .collect();
-    program
-}
-
-type ProgramType = Vec<u32>;
+type ProgramType = ArrayOfPlatters;
 #[derive(Debug)]
 pub struct Program(ProgramType);
-impl From<Vec<u8>> for Program {
-    fn from(input: Vec<u8>) -> Self {
-        let aligned = align(input);
-        let program = fuse(aligned);
-        program.into()
+impl From<Source> for Program {
+    fn from(source: Source) -> Self {
+        parition(source)
+            .iter()
+            .map(|&p| big_endian(p))
+            .collect::<ProgramType>()
+            .into()
     }
 }
 
@@ -62,33 +60,11 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_align() {
-        let source: Vec<u8> = vec![0xde, 0xad, 0xbe, 0xef, 0xba, 0xbe, 0xca, 0xfe];
-        let got = align(source);
-        let expected = vec![
-            0xde000000, 0x00ad0000, 0x0000be00, 0x000000ef, 0xba000000, 0x00be0000, 0x0000ca00,
-            0x000000fe,
-        ];
-        assert_eq!(got, expected);
-    }
-
-    #[test]
-    fn test_fuse() {
-        let nums: Vec<u32> = vec![
-            0xde000000, 0x00ad0000, 0x0000be00, 0x000000ef, 0xba000000, 0x00be0000, 0x0000ca00,
-            0x000000fe,
-        ];
-        let got = fuse(nums);
-        let expected: Vec<u32> = vec![0xdeadbeef, 0xbabecafe];
-        assert_eq!(got, expected);
-    }
-
-    #[test]
     fn parse_program() {
         let source: Vec<u8> = vec![0xde, 0xad, 0xbe, 0xef, 0xba, 0xbe, 0xca, 0xfe];
         let got: Program = source.into();
-        let expected: Vec<u32> = vec![0xdeadbeef, 0xbabecafe];
-        assert_eq!(got, expected);
+        let expected: Program = vec![0xdeadbeefu32, 0xbabecafeu32].into();
+        assert_eq!(format!("{:x?}", got), format!("{:x?}", expected));
     }
 }
 

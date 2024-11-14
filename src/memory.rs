@@ -3,8 +3,9 @@ use crate::register::Register;
 
 
 
-type ArrayType = Vec<u32>;
-type MemType = Vec<ArrayType>;
+pub type Platter = u32;
+pub type ArrayOfPlatters = Vec<Platter>;
+type MemType = Vec<ArrayOfPlatters>;
 type AllocType = Vec<usize>;
 pub struct Memory {
     mem: MemType,
@@ -61,7 +62,7 @@ impl Memory {
 }
 
 impl Index<usize> for Memory {
-    type Output = ArrayType;
+    type Output = ArrayOfPlatters;
     fn index(&self, idx: usize) -> &Self::Output {
         &self.mem[idx]
     }
@@ -72,7 +73,7 @@ impl IndexMut<usize> for Memory {
     }
 }
 impl Index<Register> for Memory {
-    type Output = ArrayType;
+    type Output = ArrayOfPlatters;
     fn index(&self, idx: Register) -> &Self::Output {
         let i: usize = idx.into();
         &self.mem[i]
@@ -84,14 +85,14 @@ impl IndexMut<Register> for Memory {
         &mut self.mem[i]
     }
 }
-impl Index<Register> for ArrayType {
+impl Index<Register> for ArrayOfPlatters {
     type Output = u32;
     fn index(&self, idx: Register) -> &Self::Output {
         let i: usize = idx.into();
         &self[i]
     }
 }
-impl IndexMut<Register> for ArrayType {
+impl IndexMut<Register> for ArrayOfPlatters {
     fn index_mut(&mut self, idx: Register) -> &mut Self::Output {
         let i: usize = idx.into();
         &mut self[i]
