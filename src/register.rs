@@ -2,6 +2,7 @@ use std::ops::{Add, BitAnd, Div, Index, IndexMut, Mul, Not};
 use std::fmt::Display;
 use crate::memory::Platter;
 use crate::memory::MemoryAddress;
+use crate::macros::{impl_from, impl_into};
 
 type RegisterType = Platter;
 #[derive(Debug, Clone, Copy, PartialEq, PartialOrd)]
@@ -16,19 +17,12 @@ type RegisterIndicatorType = u8;
 pub struct RegisterIndicator(RegisterIndicatorType);
 
 /* Register */
-impl From<RegisterType> for Register {
-    fn from(n: RegisterType) -> Self {
-        Self(n)
-    }
-}
-impl Into<RegisterType> for Register {
-    fn into(self) -> RegisterType {
-        self.0
-    }
-}
+impl_from!(Register, RegisterType);
+impl_into!(Register, RegisterType);
+
 impl From<MemoryAddress> for Register {
     fn from(n:  MemoryAddress) -> Self {
-        Self(n)
+        Self(n.into())
     }
 }
 
@@ -70,11 +64,8 @@ impl Registers {
         Registers([zero; NUMBER_OF_REGISTERS])
     }
 }
-impl From<RegistersType> for Registers {
-    fn from(n: RegistersType) -> Self {
-        Registers(n)
-    }
-}
+impl_from!(Registers, RegistersType);
+
 impl Index<RegisterIndicator> for Registers {
     type Output = Register;
     fn index(&self, index: RegisterIndicator) -> &Self::Output {

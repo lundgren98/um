@@ -2,17 +2,18 @@ use core::slice::Iter;
 use std::{collections::HashSet, ops::{Index, IndexMut}};
 use crate::register::Register;
 use std::hash::Hash;
-
+use crate::macros::impl_from;
 
 
 pub type Platter = u32;
 #[derive(PartialEq, Eq, Hash, Clone)]
 pub struct MemoryAddress(Platter);
-impl From<Platter> for MemoryAddress {
-    fn from(n: Platter) -> Self {
-        Self(n)
-    }
-}
+impl_from!(MemoryAddress, Platter);
+//impl From<Platter> for MemoryAddress {
+//    fn from(n: Platter) -> Self {
+//        Self(n)
+//    }
+//}
 
 pub type ArrayOfPlatters = Vec<Platter>;
 type MemType = Vec<ArrayOfPlatters>;
@@ -90,8 +91,7 @@ impl Memory {
 
     /* PRIVATE */
     fn all_addresses(&self) -> HashSet<MemoryAddress> {
-        let mem_addrs: MemoryAddresses = (0..5).map(|x|x.into()).collect();
-            .as_set()
+        (0..5).map(|x|x.into()).collect::<MemoryAddresses>().as_set()
     }
 }
 

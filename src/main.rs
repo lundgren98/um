@@ -3,10 +3,11 @@ use program::Program;
 use std::io::Read;
 mod instruction;
 mod machine;
-mod op;
-mod register;
-mod program;
+mod macros;
 mod memory;
+mod op;
+mod program;
+mod register;
 
 fn main() {
     let mut source = Vec::<u8>::new();
