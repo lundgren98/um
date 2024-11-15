@@ -1,10 +1,19 @@
+use core::slice::Iter;
 use std::{collections::HashSet, ops::{Index, IndexMut}};
 use crate::register::Register;
+use std::hash::Hash;
 
 
 
 pub type Platter = u32;
-pub type MemoryAddress = Platter;
+#[derive(PartialEq, Eq, Hash, Clone)]
+pub struct MemoryAddress(Platter);
+impl From<Platter> for MemoryAddress {
+    fn from(n: Platter) -> Self {
+        Self(n)
+    }
+}
+
 pub type ArrayOfPlatters = Vec<Platter>;
 type MemType = Vec<ArrayOfPlatters>;
 type MemoryAddresses = Vec<MemoryAddress>;
@@ -12,6 +21,23 @@ pub struct Memory {
     mem: MemType,
     allocated: MemoryAddresses,
 }
+
+trait ToSet<T> {
+    fn as_set(&self) -> HashSet<T>;
+}
+
+impl<T> ToSet<T> for Iter<'_,T> where T: Eq + Hash + Clone {
+    fn as_set(&self) -> HashSet<T> {
+        self.clone().cloned().collect()
+    }
+}
+
+impl<T> ToSet<T> for [T] where T: Eq + Hash + Clone {
+    fn as_set(&self) -> HashSet<T> {
+        self.iter().cloned().collect()
+    }
+}
+
 
 impl Memory {
     pub fn new() -> Self {
@@ -24,10 +50,10 @@ impl Memory {
         self.mem.len()
     }
     pub fn alloc(&mut self, size: usize) -> MemoryAddress {
-        let all_addresses = HashSet::<MemoryAddress>::from_iter(1..self.len() as MemoryAddress);
-        let free_addresses = &all_addresses - &(self.allocated.iter().cloned().collect());
-        let free_addr = free_addresses.iter().find(|_| true); // Just give me an element
-        let addr = match free_addr {
+        let all = self.all_addresses();
+        let allocated = self.allocated.as_set();
+        let free = &all - &allocated;
+        let addr = match free.iter().last() {
             None => {
                 let len = self.len();
                 if len > u32::MAX as usize {
@@ -41,7 +67,7 @@ impl Memory {
                 self[i].resize(size, 0);
                 i as usize
             }
-        } as MemoryAddress;
+        };
         self.allocated.push(addr);
         // println!("{} = alloc({})", addr, size);
         addr as u32
@@ -59,6 +85,13 @@ impl Memory {
         }
         self[addr].resize(0, 0);
         assert_eq!(self[addr].len(), 0);
+    }
+
+
+    /* PRIVATE */
+    fn all_addresses(&self) -> HashSet<MemoryAddress> {
+        let mem_addrs: MemoryAddresses = (0..5).map(|x|x.into()).collect();
+            .as_set()
     }
 }
 

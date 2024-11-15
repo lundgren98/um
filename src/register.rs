@@ -18,7 +18,7 @@ pub struct RegisterIndicator(RegisterIndicatorType);
 /* Register */
 impl From<RegisterType> for Register {
     fn from(n: RegisterType) -> Self {
-        Register(n)
+        Self(n)
     }
 }
 impl Into<RegisterType> for Register {
@@ -26,12 +26,12 @@ impl Into<RegisterType> for Register {
         self.0
     }
 }
-
-impl Into<usize> for Register {
-    fn into(self) -> usize {
-        self.0 as usize
+impl From<MemoryAddress> for Register {
+    fn from(n:  MemoryAddress) -> Self {
+        Self(n)
     }
 }
+
 impl Add for Register {
     type Output = Register;
     fn add(self, other: Self) -> Self::Output {
@@ -92,7 +92,7 @@ impl IndexMut<RegisterIndicator> for Registers {
 /* RegisterIndicator */
 impl From<u32> for RegisterIndicator {
     fn from(n: u32) -> Self {
-        Self(n as u8)
+        Self(n as RegisterIndicatorType)
     }
 }
 impl Into<RegisterIndicatorType> for RegisterIndicator {

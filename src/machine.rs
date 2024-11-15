@@ -25,6 +25,7 @@ impl Machine {
         if self.mem.len() < 1 {
             self.mem.alloc(0);
         }
+        let zero_addr: MemoryAddress = 0.into();
         self.mem[0] = program.into();
     }
     pub fn run(&mut self) {
@@ -64,7 +65,7 @@ impl Machine {
                 r[a] = r[b];
             }
             Op::Index => {
-                r[a] = mem[r[b]][r[c]].into();
+                r[a] = mem[r[b]][r[c]];
             }
             Op::Amend => {
                 mem[r[a]][r[b]] = r[c].into();
