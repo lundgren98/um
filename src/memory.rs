@@ -1,22 +1,25 @@
 use core::slice::Iter;
 use std::{collections::HashSet, ops::{Index, IndexMut}};
-use crate::register::Register;
+use crate::{macros::{impl_from, impl_index, impl_into, impl_into_via}, register::Register};
 use std::hash::Hash;
-use crate::macros::impl_from;
 
 
 pub type Platter = u32;
-#[derive(PartialEq, Eq, Hash, Clone)]
+#[derive(PartialEq, Eq, Hash, Clone, Copy)]
 pub struct MemoryAddress(Platter);
 impl_from!(MemoryAddress, Platter);
-//impl From<Platter> for MemoryAddress {
-//    fn from(n: Platter) -> Self {
-//        Self(n)
-//    }
-//}
+impl_into!(MemoryAddress, Platter);
+impl_into_via!(MemoryAddress, Platter, Register);
 
-pub type ArrayOfPlatters = Vec<Platter>;
-type MemType = Vec<ArrayOfPlatters>;
+#[derive(Debug, PartialEq, Clone)]
+struct Collection<T>(Vec<T>);
+impl_from!(Collection, Vec, T);
+
+type Array<T> = Collection<T>;
+pub type ArrayOfPlatters = Array<Platter>;
+/* TODO: Maybe have MemType be a HashMap<MemoryAddress, ArrayOfPlatters> ?*/
+type MemType = Collection<ArrayOfPlatters>;
+impl_index!(MemType, MemoryAddress, ArrayOfPlatters);
 type MemoryAddresses = Vec<MemoryAddress>;
 pub struct Memory {
     mem: MemType,
@@ -60,26 +63,26 @@ impl Memory {
                 if len > u32::MAX as usize {
                     panic!("Trying to allocate more memory than the machine is allowed to have.");
                 }
-                let v = vec![0u32; size];
+                let v: ArrayOfPlatters = vec![0u32; size].into();
                 self.mem.push(v);
-                len
+                (len as u32).into()
             }
             Some(&i) => {
                 self[i].resize(size, 0);
-                i as usize
+                i
             }
         };
         self.allocated.push(addr);
         // println!("{} = alloc({})", addr, size);
-        addr as u32
+        addr
     }
     pub fn free(&mut self, addr: MemoryAddress) {
         // println!("free({})", addr);
-        if addr == 0 {
+        if addr == 0.into() {
             panic!("Cannot abandon array 0");
         }
         match self.allocated.iter().enumerate().find(|(_, &a)| a == addr) {
-            None => panic!("Cannot abandon unallocated array {}", addr),
+            None => panic!("Cannot abandon unallocated array {}", Into::<Platter>::into(addr)),
             Some((i, _)) => {
                 self.allocated.remove(i);
             }
@@ -95,17 +98,57 @@ impl Memory {
     }
 }
 
+
+impl<T> Index<usize> for Collection<T> {
+    type Output = T;
+    fn index(&self, idx: usize) -> &Self::Output {
+        &self.0[idx]
+    }
+}
+impl<T> IndexMut<usize> for Collection<T> {
+    fn index_mut(&mut self, idx: usize) -> &mut Self::Output {
+        &mut self.0[idx]
+    }
+}
+impl<T> Collection<T> where T: Clone {
+    fn resize(&mut self, new_len: usize, value: T) {
+        let v = &mut self.0;
+        v.resize(new_len, value.into());
+    }
+}
+impl<T> Collection<T> {
+    fn len(&self) -> usize {
+        self.0.len()
+    }
+    fn push(&mut self, t: T) {
+        self.0.push(t)
+    }
+}
+
+impl Into<usize> for MemoryAddress {
+    fn into(self) -> usize {
+        self.0 as usize
+    }
+}
+
+impl From<Register> for MemoryAddress {
+    fn from(value: Register) -> Self {
+        let p: Platter = value.into();
+        p.into()
+    }
+}
+
 impl Index<MemoryAddress> for Memory {
     type Output = ArrayOfPlatters;
     fn index(&self, idx: MemoryAddress) -> &Self::Output {
-        let i = idx as usize;
-        &self.mem[i]
+        let i: Platter = idx.into();
+        &self.mem[i as usize]
     }
 }
 impl IndexMut<MemoryAddress> for Memory {
     fn index_mut(&mut self, idx: MemoryAddress) -> &mut Self::Output {
-        let i = idx as usize;
-        &mut self.mem[i]
+        let i: Platter = idx.into();
+        &mut self.mem[i as usize]
     }
 }
 impl Index<Register> for Memory {
@@ -132,5 +175,12 @@ impl IndexMut<Register> for ArrayOfPlatters {
     fn index_mut(&mut self, idx: Register) -> &mut Self::Output {
         let i: usize = idx.into();
         &mut self[i]
+    }
+}
+
+
+impl<T> Collection<T> {
+    fn new() -> Self {
+        Self(Vec::new())
     }
 }

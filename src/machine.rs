@@ -38,7 +38,7 @@ impl Machine {
 
     /* PRIVATE */
     fn peek(&self) -> Instruction {
-        Instruction::from_num(self.mem[0][self.ip])
+        (self.mem[0][self.ip]).into()
     }
     fn next(&mut self) -> Instruction {
         let instruction = self.peek();

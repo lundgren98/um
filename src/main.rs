@@ -8,6 +8,7 @@ mod memory;
 mod op;
 mod program;
 mod register;
+mod types;
 
 fn main() {
     let mut source = Vec::<u8>::new();

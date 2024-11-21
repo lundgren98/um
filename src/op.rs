@@ -16,8 +16,8 @@ pub enum Op {
     Orth,
 }
 
-impl Op {
-    pub fn from_num(op: u8) -> Self {
+impl From<u8> for Op {
+    fn from(op: u8) -> Self {
         match op {
             0 => Self::Move,
             1 => Self::Index,

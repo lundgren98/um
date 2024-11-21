@@ -1,31 +1,31 @@
-use std::ops::{Add, BitAnd, Div, Index, IndexMut, Mul, Not};
-use std::fmt::Display;
-use crate::memory::Platter;
-use crate::memory::MemoryAddress;
-use crate::macros::{impl_from, impl_into};
+use crate::{
+    macros::{impl_from, impl_into, impl_into_extend, impl_index},
+    memory::{MemoryAddress, Platter},
+    types::u3,
+};
+use std::ops::{Add, BitAnd, Div, Mul, Not};
 
 type RegisterType = Platter;
 #[derive(Debug, Clone, Copy, PartialEq, PartialOrd)]
 pub struct Register(RegisterType);
+impl_from!(Register, RegisterType);
+impl_into!(Register, RegisterType);
+
+
+type IndexType = u3;
+#[derive(Debug)]
+pub struct Index(IndexType);
+impl_from!(Index, IndexType);
+impl_into!(Index, IndexType);
+impl_into_extend!(Index, usize);
 
 const NUMBER_OF_REGISTERS: usize = 8;
 type RegistersType = [Register; NUMBER_OF_REGISTERS];
 pub struct Registers(RegistersType);
-
-type RegisterIndicatorType = u8;
-#[derive(Debug)]
-pub struct RegisterIndicator(RegisterIndicatorType);
+impl_from!(Registers, RegistersType);
+impl_index!(Registers, Index, Register);
 
 /* Register */
-impl_from!(Register, RegisterType);
-impl_into!(Register, RegisterType);
-
-impl From<MemoryAddress> for Register {
-    fn from(n:  MemoryAddress) -> Self {
-        Self(n.into())
-    }
-}
-
 impl Add for Register {
     type Output = Register;
     fn add(self, other: Self) -> Self::Output {
@@ -57,6 +57,7 @@ impl Not for Register {
     }
 }
 
+
 /* Registers */
 impl Registers {
     pub fn new() -> Self {
@@ -64,36 +65,11 @@ impl Registers {
         Registers([zero; NUMBER_OF_REGISTERS])
     }
 }
-impl_from!(Registers, RegistersType);
 
-impl Index<RegisterIndicator> for Registers {
-    type Output = Register;
-    fn index(&self, index: RegisterIndicator) -> &Self::Output {
-        let i: RegisterIndicatorType = index.into();
-        &self.0[i as usize]
+/* Index */
+impl From<u32> for Index {
+    fn from(value: u32) -> Self {
+        let underlying: IndexType = value.into();
+        underlying.into()
     }
 }
-impl IndexMut<RegisterIndicator> for Registers {
-    fn index_mut(&mut self, index: RegisterIndicator) -> &mut Self::Output {
-        let i: RegisterIndicatorType = index.into();
-        &mut self.0[i as usize]
-    }
-}
-
-/* RegisterIndicator */
-impl From<u32> for RegisterIndicator {
-    fn from(n: u32) -> Self {
-        Self(n as RegisterIndicatorType)
-    }
-}
-impl Into<RegisterIndicatorType> for RegisterIndicator {
-    fn into(self) -> RegisterIndicatorType {
-        self.0
-    }
-}
-impl Display for RegisterIndicator {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}", self.0)
-    }
-}
-
