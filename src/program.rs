@@ -1,5 +1,4 @@
-use crate::memory::ArrayOfPlatters;
-use crate::memory::Platter;
+use crate::memory::{ArrayOfPlatters, Collection, Platter};
 
 pub type Source = Vec<u8>;
 const PLATTER_SIZE: usize = 4;
@@ -63,7 +62,8 @@ mod tests {
     fn parse_program() {
         let source: Vec<u8> = vec![0xde, 0xad, 0xbe, 0xef, 0xba, 0xbe, 0xca, 0xfe];
         let got: Program = source.into();
-        let expected: Program = vec![0xdeadbeefu32, 0xbabecafeu32].into();
+        let tmp: Collection<Platter> = vec![0xdeadbeefu32, 0xbabecafeu32].into();
+        let expected: Program = tmp.into();
         assert_eq!(format!("{:x?}", got), format!("{:x?}", expected));
     }
 }

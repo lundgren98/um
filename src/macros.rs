@@ -7,13 +7,6 @@ macro_rules! impl_from {
             }
         }
     };
-    ($name:ident, $underlying:ident, $generic:ident) => {
-        impl<$generic> From<$underlying<T>> for $name<$generic> {
-            fn from(n: $underlying<$generic>) -> Self {
-                Self(n)
-            }
-        }
-    };
 }
 pub(crate) use impl_from;
 

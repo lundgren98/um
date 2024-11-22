@@ -25,6 +25,7 @@ pub struct Instruction {
 #[derive(Clone)]
 struct RawInstruction(Platter);
 impl_into!(RawInstruction, Platter);
+impl_from!(RawInstruction, Platter);
 
 impl Into<u25> for RawInstruction {
     fn into(self) -> u25 {
@@ -73,5 +74,12 @@ impl From<RawInstruction> for Instruction {
             sa: RegisterType::SA(raw()).into(),
             value: raw().into(),
         }
+    }
+}
+
+impl From<Platter> for Instruction {
+    fn from(value: Platter) -> Self {
+        let raw: RawInstruction = value.into();
+        raw.into()
     }
 }

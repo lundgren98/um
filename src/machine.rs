@@ -3,8 +3,8 @@ use std::{io::Read, process::exit};
 use crate::op::Op;
 use crate::register::Registers;
 use crate::program::Program;
-use crate::memory::{Memory, MemoryAddress};
-use crate::instruction::Instruction;
+use crate::memory::{Memory, MemoryAddress, Platter};
+use crate::instruction::{Instruction};
 
 pub struct Machine {
     mem: Memory, // program "array 0"
@@ -26,7 +26,7 @@ impl Machine {
             self.mem.alloc(0);
         }
         let zero_addr: MemoryAddress = 0.into();
-        self.mem[0] = program.into();
+        self.mem[zero_addr] = program.into();
     }
     pub fn run(&mut self) {
         loop {
@@ -38,7 +38,8 @@ impl Machine {
 
     /* PRIVATE */
     fn peek(&self) -> Instruction {
-        (self.mem[0][self.ip]).into()
+        let zero_addr: MemoryAddress = 0.into();
+        self.mem[zero_addr][self.ip].into()
     }
     fn next(&mut self) -> Instruction {
         let instruction = self.peek();
@@ -65,7 +66,7 @@ impl Machine {
                 r[a] = r[b];
             }
             Op::Index => {
-                r[a] = mem[r[b]][r[c]];
+                r[a] = mem[r[b]][r[c]].into();
             }
             Op::Amend => {
                 mem[r[a]][r[b]] = r[c].into();
@@ -116,7 +117,8 @@ impl Machine {
                 self.ip = self.r[c].into();
             }
             Op::Orth => {
-                r[i.sa] = i.value.into();
+               let tmp: Platter = i.value.into();
+               r[i.sa] = tmp.into();
             }
         }
     }

@@ -12,8 +12,19 @@ impl_into!(MemoryAddress, Platter);
 impl_into_via!(MemoryAddress, Platter, Register);
 
 #[derive(Debug, PartialEq, Clone)]
-struct Collection<T>(Vec<T>);
-impl_from!(Collection, Vec, T);
+pub struct Collection<T>(Vec<T>);
+impl<T, U> From<Vec<U>> for Collection<T> where T: From<U>, U: Copy {
+    fn from(u: Vec<U>) -> Collection<T> {
+        let v: Vec<T> = u.iter().map(|&x| Into::<T>::into(x)).collect();
+        Self(v)
+    }
+}
+impl<T, A> FromIterator<A> for Collection<T> where Vec<T>: FromIterator<A> {
+    fn from_iter<S: IntoIterator<Item = A>>(iter: S) -> Self {
+        let v: Vec<T> = iter.into_iter().collect();
+        Self(v)
+    }
+}
 
 type Array<T> = Collection<T>;
 pub type ArrayOfPlatters = Array<Platter>;

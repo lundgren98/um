@@ -1,5 +1,5 @@
 use crate::{
-    macros::{impl_from, impl_into, impl_into_extend, impl_index},
+    macros::{impl_from, impl_into, impl_into_via, impl_into_extend, impl_index},
     memory::{MemoryAddress, Platter},
     types::u3,
 };
@@ -10,6 +10,11 @@ type RegisterType = Platter;
 pub struct Register(RegisterType);
 impl_from!(Register, RegisterType);
 impl_into!(Register, RegisterType);
+impl Into<usize> for Register {
+    fn into(self) -> usize {
+        self.0 as usize
+    }
+}
 
 
 type IndexType = u3;

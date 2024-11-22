@@ -46,12 +46,6 @@ impl From<u9> for u3 {
     }
 }
 
-impl From<u32> for u9 {
-    fn from(x: u32) -> Self {
-        Self(x as u16).narrow()
-    }
-}
-
 trait Max {
     fn max() -> Self;
 }
