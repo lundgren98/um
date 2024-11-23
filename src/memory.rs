@@ -105,7 +105,7 @@ impl Memory {
 
     /* PRIVATE */
     fn all_addresses(&self) -> HashSet<MemoryAddress> {
-        (0..5).map(|x|x.into()).collect::<MemoryAddresses>().as_set()
+        (0..self.len() as u32).map(|x|x.into()).collect::<MemoryAddresses>().as_set()
     }
 }
 

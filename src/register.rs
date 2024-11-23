@@ -78,3 +78,46 @@ impl From<u32> for Index {
         underlying.into()
     }
 }
+
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_add() {
+        let a = Register(      900_000);
+        let b = Register(        4_773);
+        assert_eq!(a + b, Register(   904773));
+    }
+    #[test]
+    fn test_add_overflow() {
+        let c = Register(3_000_000_000);
+        let d = Register(2_000_000_000);
+        assert_eq!(c + d, Register(705_032_704));
+    }
+    #[test]
+    fn test_mul() {
+        let a = Register(900_000);
+        let b = Register(  4_773);
+        assert_eq!(a * b, Register(732_704));
+    }
+    #[test]
+    fn test_div() {
+        let a = Register(900000);
+        let b = Register(  4773);
+        assert_eq!(a / b, Register(   188));
+    }
+    #[test]
+    fn test_and() {
+        let a = Register(0xdeadbeef);
+        let b = Register(0xbabecafe);
+        assert_eq!(a & b, Register(0x9aac8aee));
+    }
+    #[test]
+    fn test_not() {
+        let a = Register(0xffffffff);
+        let b = Register(0x00000000);
+        assert_eq!(!a, b);
+    }
+}

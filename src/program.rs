@@ -1,4 +1,4 @@
-use crate::memory::{ArrayOfPlatters, Collection, Platter};
+use crate::memory::{ArrayOfPlatters, Platter};
 
 pub type Source = Vec<u8>;
 const PLATTER_SIZE: usize = 4;
@@ -56,6 +56,7 @@ impl Into<ProgramType> for Program {
 
 #[cfg(test)]
 mod tests {
+    use crate::memory::Collection;
     use super::*;
 
     #[test]

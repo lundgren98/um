@@ -4,7 +4,7 @@ use crate::op::Op;
 use crate::register::Registers;
 use crate::program::Program;
 use crate::memory::{Memory, MemoryAddress, Platter};
-use crate::instruction::{Instruction};
+use crate::instruction::Instruction;
 
 pub struct Machine {
     mem: Memory, // program "array 0"
@@ -47,7 +47,7 @@ impl Machine {
         instruction
     }
     fn act(&mut self) {
-        let i= self.next();
+        let i = self.next();
         // println!("{:#010x}", raw_instruction);
         // println!("{i:?}");
         // println!("{}", i.as_pseudo_assembly());
@@ -123,3 +123,21 @@ impl Machine {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use crate::memory::Collection;
+    use super::*;
+
+    #[test]
+    fn test_load() {
+        let source: Collection<Platter> = vec![
+            0xdeadbeefu32,
+            0xbabecafeu32,
+        ].into();
+        let p: Program = source.into();
+        let mut m = Machine::new();
+        m.load(p);
+    }
+}
+
