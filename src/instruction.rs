@@ -7,6 +7,7 @@ enum RegisterType {
     SA(RawInstruction),
 }
 
+#[derive(Debug, PartialEq, Clone)]
 pub struct Instruction {
     pub op: Op,
     pub a: register::Index,
@@ -29,7 +30,7 @@ impl Into<u25> for RawInstruction {
 
 const PLATTER_SIZE: u32 = 32;
 const OP_SIZE: u32 = 4;
-const VALUE_SIZE: u32 = 25;
+// const VALUE_SIZE: u32 = 25;
 const OP_OFFSET: u32 = PLATTER_SIZE - OP_SIZE;
 impl Into<Op> for RawInstruction {
     fn into(self) -> Op {

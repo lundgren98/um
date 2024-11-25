@@ -1,6 +1,6 @@
 use crate::{
-    macros::{impl_from, impl_into, impl_into_via, impl_into_extend, impl_index},
-    memory::{MemoryAddress, Platter},
+    macros::{impl_from, impl_into, impl_into_extend, impl_index},
+    memory::Platter,
     types::u3,
 };
 use std::ops::{Add, BitAnd, Div, Mul, Not};
@@ -18,7 +18,7 @@ impl Into<usize> for Register {
 
 
 pub type IndexType = u3;
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Clone)]
 pub struct Index(IndexType);
 impl_from!(Index, IndexType);
 impl_into!(Index, IndexType);
