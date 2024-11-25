@@ -63,39 +63,101 @@ impl Machine {
         let mem = &mut self.mem;
 
         match i.op {
+            /*
+                  The register A receives the value in register B,
+                  unless the register C contains 0.
+             *
+             */
             Op::Move => {
                 if r[c] == 0.into() { return; }
                 r[a] = r[b];
             }
+            /*
+                  The register A receives the value stored at offset
+                  in register C in the array identified by B.
+             *
+             */
             Op::Index => {
                 r[a] = mem[r[b]][r[c]].into();
             }
+            /*
+                  The array identified by A is amended at the offset
+                  in register B to store the value in register C.
+             *
+             */
             Op::Amend => {
                 mem[r[a]][r[b]] = r[c].into();
             }
+            /*
+                  The register A receives the value in register B plus 
+                  the value in register C, modulo 2^32.
+             *
+             */
             Op::Add => {
                 r[a] = r[b] + r[c];
             }
+            /*
+                  The register A receives the value in register B times
+                  the value in register C, modulo 2^32.
+             *
+             */
             Op::Mult => {
                 r[a] = r[b] * r[c];
             }
+            /*
+                  The register A receives the value in register B
+                  divided by the value in register C, if any, where
+                  each quantity is treated as an unsigned 32 bit number.
+             *
+             */
             Op::Div => {
                 r[a] = r[b] / r[c];
             }
+            /*
+                  Each bit in the register A receives the 1 bit if
+                  either register B or register C has a 0 bit in that
+                  position.  Otherwise the bit in register A receives
+                  the 0 bit.
+             *
+             */
             Op::NotAnd => {
                 r[a] = !(r[b] & r[c]);
             }
+            /*
+                  The universal machine stops computation.
+             *
+             */
             Op::Halt => {
                 exit(0);
             }
+            /*
+                  A new array is created with a capacity of platters
+                  commensurate to the value in the register C. This
+                  new array is initialized entirely with platters
+                  holding the value 0. A bit pattern not consisting of
+                  exclusively the 0 bit, and that identifies no other
+                  active allocated array, is placed in the B register.
+             *
+             */
             Op::Alloc => {
                 let size: usize = r[c].into();
                 self.r[b] = mem.alloc(size).into();
             }
+            /*
+                  The array identified by the register C is abandoned.
+                  Future allocations may then reuse that identifier.
+             *
+             */
             Op::Aband => {
                 let addr: MemoryAddress = r[c].into();
                 mem.free(addr);
             }
+            /*
+                  The value in the register C is displayed on the console
+                  immediately. Only values between and including 0 and 255
+                  are allowed.
+             *
+             */
             Op::Output => {
                 let ch: u32 = r[c].into();
                 if ch > 255 {
@@ -105,6 +167,15 @@ impl Machine {
                 let print_me = std::str::from_utf8(&chars).unwrap();
                 print!("{print_me}");
             }
+            /*
+                  The universal machine waits for input on the console.
+                  When input arrives, the register C is loaded with the
+                  input, which must be between and including 0 and 255.
+                  If the end of input has been signaled, then the 
+                  register C is endowed with a uniform value pattern
+                  where every place is pregnant with the 1 bit.
+             *
+             */
             Op::Input => {
                 let mut buf = [0u8; 1];
                 r[c] = match std::io::stdin().read(&mut buf) {
@@ -113,11 +184,30 @@ impl Machine {
                     Ok(_) => buf[0] as u32,
                 }.into();
             }
+            /*
+                  The array identified by the B register is duplicated
+                  and the duplicate shall replace the '0' array,
+                  regardless of size. The execution finger is placed
+                  to indicate the platter of this array that is
+                  described by the offset given in C, where the value
+                  0 denotes the first platter, 1 the second, et
+                  cetera.
+
+                  The '0' array shall be the most sublime choice for
+                  loading, and shall be handled with the utmost
+                  velocity.
+             *
+             */
             Op::Load => {
                 let new_program: Program = mem[r[b]].clone().into();
                 self.load(new_program);
                 self.ip = self.r[c].into();
             }
+            /*
+                  The value indicated is loaded into the register A
+                  forthwith.
+             *
+             */
             Op::Orth => {
                let tmp: Platter = i.value.into();
                r[i.sa] = tmp.into();
