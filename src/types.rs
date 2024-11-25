@@ -8,6 +8,7 @@ use std::ops::BitAndAssign;
 pub struct u3(u8);
 impl_into!(u3, u8);
 impl_into_extend!(u3, usize);
+impl_into_extend!(u3, u32);
 impl_from_narrow!(u3, u8);
 impl_from_extend!(u3, u8, u32);
 set_max!(u3, 0b111);

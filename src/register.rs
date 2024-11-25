@@ -17,7 +17,7 @@ impl Into<usize> for Register {
 }
 
 
-type IndexType = u3;
+pub type IndexType = u3;
 #[derive(Debug)]
 pub struct Index(IndexType);
 impl_from!(Index, IndexType);

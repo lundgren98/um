@@ -37,3 +37,24 @@ impl From<u8> for Op {
         }
     }
 }
+
+impl Into<u32> for Op {
+    fn into(self) -> u32 {
+        match self {
+            Self::Move => 0,
+            Self::Index => 1,
+            Self::Amend => 2,
+            Self::Add => 3,
+            Self::Mult => 4,
+            Self::Div => 5,
+            Self::NotAnd => 6,
+            Self::Halt => 7,
+            Self::Alloc => 8,
+            Self::Aband => 9,
+            Self::Output => 10,
+            Self::Input => 11,
+            Self::Load => 12,
+            Self::Orth => 13,
+        }
+    }
+}
