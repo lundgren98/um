@@ -1,10 +1,4 @@
-use crate::{
-    register,
-    macros::*,
-    types::u25,
-    op::Op,
-    memory::Platter,
-};
+use crate::{macros::*, memory::Platter, op::Op, register, types::u25};
 
 enum RegisterType {
     A(RawInstruction),
@@ -23,7 +17,7 @@ pub struct Instruction {
 }
 
 #[derive(Clone)]
-struct RawInstruction(Platter);
+pub struct RawInstruction(Platter);
 impl_into!(RawInstruction, Platter);
 impl_from!(RawInstruction, Platter);
 
@@ -55,10 +49,10 @@ impl From<RegisterType> for register::Index {
             x >> s
         };
         match value {
-            RegisterType::A(n) => shift(n,A_OFFSET).into(),
-            RegisterType::B(n) => shift(n,B_OFFSET).into(),
-            RegisterType::C(n) => shift(n,C_OFFSET).into(),
-            RegisterType::SA(n) => shift(n,SA_OFFSET).into(),
+            RegisterType::A(n) => shift(n, A_OFFSET).into(),
+            RegisterType::B(n) => shift(n, B_OFFSET).into(),
+            RegisterType::C(n) => shift(n, C_OFFSET).into(),
+            RegisterType::SA(n) => shift(n, SA_OFFSET).into(),
         }
     }
 }
@@ -74,6 +68,32 @@ impl From<RawInstruction> for Instruction {
             sa: RegisterType::SA(raw()).into(),
             value: raw().into(),
         }
+    }
+}
+
+impl Into<RawInstruction> for Instruction {
+    fn into(self) -> RawInstruction {
+        let shift = |&n: &u32, s: u32| n << s;
+        let sa: u32 = Into::<register::IndexType>::into(self.sa).into();
+        let a: u32 = Into::<register::IndexType>::into(self.a).into();
+        let b: u32 = Into::<register::IndexType>::into(self.b).into();
+        let c: u32 = Into::<register::IndexType>::into(self.c).into();
+        let isa = shift(&sa, SA_OFFSET);
+        let ia = shift(&a, A_OFFSET);
+        let ib = shift(&b, B_OFFSET);
+        let ic = shift(&c, C_OFFSET);
+        let ivalue: u32 = self.value.into();
+        let ret: u32 = match self.op {
+            Op::Orth => {
+                let iop = shift(&self.op.into(), OP_OFFSET);
+                iop + isa + ivalue
+            }
+            _ => {
+                let iop = shift(&self.op.into(), OP_OFFSET);
+                iop + ia + ib + ic
+            }
+        };
+        ret.into()
     }
 }
 

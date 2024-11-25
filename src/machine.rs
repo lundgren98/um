@@ -1,4 +1,6 @@
 use core::panic;
+use std::time::Duration;
+use std::thread::sleep;
 use std::{io::Read, process::exit};
 use crate::op::Op;
 use crate::register::Registers;
@@ -115,6 +117,8 @@ impl Machine {
                 let new_program: Program = mem[r[b]].clone().into();
                 self.load(new_program);
                 self.ip = self.r[c].into();
+                println!("{:?}", self.ip);
+                sleep(Duration::from_secs(1));
             }
             Op::Orth => {
                let tmp: Platter = i.value.into();
@@ -126,7 +130,8 @@ impl Machine {
 
 #[cfg(test)]
 mod tests {
-    use crate::memory::Collection;
+    use crate::memory::{Memory, Collection};
+    use crate::instruction::RawInstruction;
     use super::*;
 
     #[test]
@@ -135,9 +140,151 @@ mod tests {
             0xdeadbeefu32,
             0xbabecafeu32,
         ].into();
+        let mut expected = Memory::new();
+        expected.alloc(2);
+        let zero: MemoryAddress = 0.into();
+        expected[zero] = source.clone();
+
         let p: Program = source.into();
         let mut m = Machine::new();
         m.load(p);
+        let got = m.mem;
+        assert_eq!(expected, got);
+    }
+
+    #[test]
+    fn test_cond_move_false() {
+        let inst: RawInstruction = Instruction{
+            op: Op::Move,
+            a: 0.into(),
+            b: 1.into(),
+            c: 2.into(),
+            sa: 0.into(),
+            value: 0.into(),
+        }.into();
+        let code: Platter = inst.into();
+        let source: Collection<Platter> = vec![
+            code,
+        ].into();
+
+        let p: Program = source.into();
+        let mut m = Machine::new();
+        m.load(p);
+        let expected = 0xbabecafe;
+        m.r[0.into()] = expected.into();
+        m.r[1.into()] = 0xdeadbeef.into();
+        m.act();
+        let got = m.r[0.into()].into();
+
+        assert_eq!(expected, got);
+    }
+
+    #[test]
+    fn test_cond_move_true() {
+        let inst: RawInstruction = Instruction{
+            op: Op::Move,
+            a: 0.into(),
+            b: 1.into(),
+            c: 0.into(),
+            sa: 0.into(),
+            value: 0.into(),
+        }.into();
+        let code: Platter = inst.into();
+        let source: Collection<Platter> = vec![
+            code,
+        ].into();
+
+        let p: Program = source.into();
+        let mut m = Machine::new();
+        m.load(p);
+        let expected = 0xdeadbeef;
+        m.r[0.into()] = 0xbabecafe.into();
+        m.r[1.into()] = expected.into();
+        m.act();
+        let got = m.r[0.into()].into();
+
+        assert_eq!(expected, got);
+    }
+
+    #[test]
+    fn test_add() {
+        let inst: RawInstruction = Instruction{
+            op: Op::Add,
+            a: 2.into(),
+            b: 1.into(),
+            c: 0.into(),
+            sa: 0.into(),
+            value: 0.into(),
+        }.into();
+        let code: Platter = inst.into();
+        let source: Collection<Platter> = vec![
+            code,
+        ].into();
+
+        let p: Program = source.into();
+        let mut m = Machine::new();
+        m.load(p);
+        m.r[0.into()] = 3_000_000_000.into();
+        m.r[1.into()] = 2_000_000_000.into();
+        m.act();
+        let expected = 705_032_704u32;
+        let got = m.r[2.into()].into();
+
+        assert_eq!(expected, got);
+    }
+
+    #[test]
+    fn test_mult() {
+        let inst: RawInstruction = Instruction{
+            op: Op::Mult,
+            a: 2.into(),
+            b: 1.into(),
+            c: 0.into(),
+            sa: 0.into(),
+            value: 0.into(),
+        }.into();
+        let code: Platter = inst.into();
+        let source: Collection<Platter> = vec![
+            code,
+        ].into();
+
+        let p: Program = source.into();
+        let mut m = Machine::new();
+        m.load(p);
+        m.r[0.into()] = 900_000.into();
+        m.r[1.into()] =   4_773.into();
+        m.act();
+        let expected = 732_704u32;
+        let got = m.r[2.into()].into();
+
+        assert_eq!(expected, got);
+    }
+
+    #[test]
+    fn test_div() {
+        let inst: RawInstruction = Instruction{
+            op: Op::Div,
+            a: 2.into(),
+            b: 0.into(),
+            c: 1.into(),
+            sa: 0.into(),
+            value: 0.into(),
+        }.into();
+        let code: Platter = inst.into();
+        let source: Collection<Platter> = vec![
+            code,
+        ].into();
+
+        let p: Program = source.into();
+        let mut m = Machine::new();
+        m.load(p);
+        m.r[0.into()] = 900000.into();
+        m.r[1.into()] =   4773.into();
+        m.act();
+        let expected =    188u32;
+        let got = m.r[2.into()].into();
+
+        assert_eq!(expected, got);
     }
 }
 

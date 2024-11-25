@@ -5,7 +5,7 @@ use std::hash::Hash;
 
 
 pub type Platter = u32;
-#[derive(PartialEq, Eq, Hash, Clone, Copy)]
+#[derive(Debug, PartialEq, Eq, Hash, Clone, Copy)]
 pub struct MemoryAddress(Platter);
 impl_from!(MemoryAddress, Platter);
 impl_into!(MemoryAddress, Platter);
@@ -32,6 +32,7 @@ pub type ArrayOfPlatters = Array<Platter>;
 type MemType = Collection<ArrayOfPlatters>;
 impl_index!(MemType, MemoryAddress, ArrayOfPlatters);
 type MemoryAddresses = Vec<MemoryAddress>;
+#[derive(Debug, PartialEq, Clone)]
 pub struct Memory {
     mem: MemType,
     allocated: MemoryAddresses,
