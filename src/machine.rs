@@ -117,8 +117,6 @@ impl Machine {
                 let new_program: Program = mem[r[b]].clone().into();
                 self.load(new_program);
                 self.ip = self.r[c].into();
-                println!("{:?}", self.ip);
-                sleep(Duration::from_secs(1));
             }
             Op::Orth => {
                let tmp: Platter = i.value.into();
