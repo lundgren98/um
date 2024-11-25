@@ -87,17 +87,17 @@ macro_rules! impl_index {
 }
 pub(crate) use impl_index;
 
-macro_rules! impl_bitand {
-    ($name:ident) => {
-        impl BitAnd for $name {
-            type Output = Self;
-            fn bitand(self, rhs: Self) -> Self::Output {
-                Self(self.0 & rhs.0)
-            }
-        }
-    };
-}
-pub(crate) use impl_bitand;
+// macro_rules! impl_bitand {
+//     ($name:ident) => {
+//         impl BitAnd for $name {
+//             type Output = Self;
+//             fn bitand(self, rhs: Self) -> Self::Output {
+//                 Self(self.0 & rhs.0)
+//             }
+//         }
+//     };
+// }
+// pub(crate) use impl_bitand;
 
 macro_rules! impl_bitand_assign {
     ($name:ident) => {

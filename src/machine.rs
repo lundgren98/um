@@ -1,6 +1,4 @@
 use core::panic;
-use std::time::Duration;
-use std::thread::sleep;
 use std::{io::Read, process::exit};
 use crate::op::Op;
 use crate::register::Registers;
@@ -218,7 +216,9 @@ impl Machine {
 
 #[cfg(test)]
 mod tests {
-    use crate::memory::{Memory, Collection};
+    use std::u32;
+
+    use crate::memory::{ArrayOfPlatters, Collection, Memory};
     use crate::instruction::RawInstruction;
     use super::*;
 
@@ -290,6 +290,97 @@ mod tests {
         m.r[1.into()] = expected.into();
         m.act();
         let got = m.r[0.into()].into();
+
+        assert_eq!(expected, got);
+    }
+
+    #[test]
+    fn test_index() {
+        let alloc_inst: RawInstruction = Instruction{
+            op: Op::Alloc,
+            a: 2.into(),
+            b: 1.into(),
+            c: 0.into(),
+            sa: 0.into(),
+            value: 0.into(),
+        }.into();
+        let amend_inst: RawInstruction = Instruction{
+            op: Op::Amend,
+            a: 1.into(),
+            b: 3.into(),
+            c: 4.into(),
+            sa: 0.into(),
+            value: 0.into(),
+        }.into();
+        let index_inst: RawInstruction = Instruction{
+            op: Op::Index,
+            a: 0.into(),
+            b: 1.into(),
+            c: 3.into(),
+            sa: 0.into(),
+            value: 0.into(),
+        }.into();
+        let alloc_code: Platter = alloc_inst.into();
+        let amend_code: Platter = amend_inst.into();
+        let index_code: Platter = index_inst.into();
+        let source: Collection<Platter> = vec![
+            alloc_code,
+            amend_code,
+            index_code,
+        ].into();
+
+        let p: Program = source.into();
+        let mut m = Machine::new();
+        m.load(p);
+        m.r[0.into()] = 1.into();
+        m.r[3.into()] = 0.into();
+        m.r[4.into()] = 42069.into();
+        let expected = m.r[4.into()];
+        m.act();
+        m.act();
+        m.act();
+        let got = m.r[0.into()];
+
+        assert_eq!(expected, got);
+    }
+
+    #[test]
+    fn test_amend() {
+        let alloc_inst: RawInstruction = Instruction{
+            op: Op::Alloc,
+            a: 2.into(),
+            b: 1.into(),
+            c: 0.into(),
+            sa: 0.into(),
+            value: 0.into(),
+        }.into();
+        let amend_inst: RawInstruction = Instruction{
+            op: Op::Amend,
+            a: 1.into(),
+            b: 3.into(),
+            c: 4.into(),
+            sa: 0.into(),
+            value: 0.into(),
+        }.into();
+        let alloc_code: Platter = alloc_inst.into();
+        let amend_code: Platter = amend_inst.into();
+        let source: Collection<Platter> = vec![
+            alloc_code,
+            amend_code,
+        ].into();
+
+        let p: Program = source.into();
+        let mut m = Machine::new();
+        m.load(p);
+        m.r[0.into()] = 1.into();
+        m.r[3.into()] = 0.into();
+        let expected = 42069u32;
+        m.r[4.into()] = expected.into();
+        let idx = m.r[3.into()];
+        m.act();
+        let addr = m.r[1.into()];
+        m.act();
+        let got = m.mem[addr][idx];
 
         assert_eq!(expected, got);
     }
@@ -371,6 +462,198 @@ mod tests {
         m.act();
         let expected =    188u32;
         let got = m.r[2.into()].into();
+
+        assert_eq!(expected, got);
+    }
+
+    #[test]
+    fn test_notand() {
+        let inst: RawInstruction = Instruction{
+            op: Op::NotAnd,
+            a: 2.into(),
+            b: 1.into(),
+            c: 0.into(),
+            sa: 0.into(),
+            value: 0.into(),
+        }.into();
+        let code: Platter = inst.into();
+        let source: Collection<Platter> = vec![
+            code,
+        ].into();
+
+        let p: Program = source.into();
+        let mut m = Machine::new();
+        m.load(p);
+        m.r[0.into()] = 0xbabe0000.into();
+        m.r[1.into()] = 0x0000cafe.into();
+        m.act();
+        let expected =    u32::MAX;
+        let got = m.r[2.into()].into();
+
+        assert_eq!(expected, got);
+    }
+
+    #[test]
+    fn test_alloc() {
+        let inst: RawInstruction = Instruction{
+            op: Op::Alloc,
+            a: 2.into(),
+            b: 1.into(),
+            c: 0.into(),
+            sa: 0.into(),
+            value: 0.into(),
+        }.into();
+        let code: Platter = inst.into();
+        let source: Collection<Platter> = vec![
+            code,
+            code,
+        ].into();
+
+        let p: Program = source.into();
+        let mut m = Machine::new();
+        m.load(p);
+        m.r[0.into()] = 3.into();
+        m.act();
+        let expected_b = 1u32;
+        let r0 = m.r[1.into()];
+        let got_b = r0.clone().into();
+        assert_eq!(expected_b, got_b);
+        let expected_m: ArrayOfPlatters = vec![0u32;3].into();
+        let got_m = m.mem[r0].clone();
+        assert_eq!(expected_m, got_m);
+        m.act();
+        let expected_b = 2u32;
+        let r0 = m.r[1.into()];
+        let got_b = r0.clone().into();
+        assert_eq!(expected_b, got_b);
+        let expected_m: ArrayOfPlatters = vec![0u32;3].into();
+        let got_m = m.mem[r0].clone();
+        assert_eq!(expected_m, got_m);
+    }
+
+    #[test]
+    fn test_free() {
+        let alloc_inst: RawInstruction = Instruction{
+            op: Op::Alloc,
+            a: 2.into(),
+            b: 1.into(),
+            c: 0.into(),
+            sa: 0.into(),
+            value: 0.into(),
+        }.into();
+        let free_inst: RawInstruction = Instruction{
+            op: Op::Aband,
+            a: 2.into(),
+            b: 1.into(),
+            c: 0.into(),
+            sa: 0.into(),
+            value: 0.into(),
+        }.into();
+        let alloc_code: Platter = alloc_inst.into();
+        let free_code: Platter = free_inst.into();
+        let source: Collection<Platter> = vec![
+            alloc_code,
+            free_code,
+            alloc_code,
+        ].into();
+
+        let p: Program = source.into();
+        let mut m = Machine::new();
+        m.load(p);
+        m.r[0.into()] = 0.into();
+        m.act();
+        let first_addr = m.r[1.into()];
+        m.r[0.into()] = first_addr;
+        m.act();
+        m.r[0.into()] = 3.into();
+        m.act();
+        let second_addr = m.r[1.into()];
+        assert_eq!(first_addr, second_addr);
+        let expected_m: ArrayOfPlatters = vec![0u32;3].into();
+        let got_m = m.mem[second_addr].clone();
+        assert_eq!(expected_m, got_m);
+    }
+
+    #[test]
+    fn test_orth() {
+        let expected = 0x01becafeu32;
+        let inst: RawInstruction = Instruction{
+            op: Op::Orth,
+            a: 0.into(),
+            b: 0.into(),
+            c: 0.into(),
+            sa: 2.into(),
+            value: expected.into(),
+        }.into();
+        let code: Platter = inst.into();
+        let source: Collection<Platter> = vec![
+            code,
+        ].into();
+
+        let p: Program = source.into();
+        let mut m = Machine::new();
+        m.load(p);
+        m.act();
+        let got = m.r[2.into()].into();
+
+        assert_eq!(expected, got);
+    }
+
+    #[test]
+    fn test_load_program() {
+        let alloc_inst: RawInstruction = Instruction{
+            op: Op::Alloc,
+            a: 2.into(),
+            b: 1.into(),
+            c: 0.into(),
+            sa: 0.into(),
+            value: 0.into(),
+        }.into();
+        let amend_inst: RawInstruction = Instruction{
+            op: Op::Amend,
+            a: 1.into(),
+            b: 3.into(),
+            c: 4.into(),
+            sa: 0.into(),
+            value: 0.into(),
+        }.into();
+        let load_inst: RawInstruction = Instruction{
+            op: Op::Load,
+            a: 0.into(),
+            b: 1.into(),
+            c: 3.into(),
+            sa: 0.into(),
+            value: 0.into(),
+        }.into();
+        let expected = Instruction{
+            op: Op::Add,
+            a: 0.into(),
+            b: 1.into(),
+            c: 2.into(),
+            sa: 0.into(),
+            value: 10.into(), // 8 + 2
+        };
+        let expected_inst: RawInstruction = expected.clone().into();
+        let alloc_code: Platter = alloc_inst.into();
+        let amend_code: Platter = amend_inst.into();
+        let load_code: Platter = load_inst.into();
+        let program: Platter = expected_inst.into();
+        let source: Collection<Platter> = vec![
+            alloc_code,
+            amend_code,
+            load_code,
+        ].into();
+
+        let p: Program = source.into();
+        let mut m = Machine::new();
+        m.load(p);
+        m.r[0.into()] = 2.into();
+        m.r[3.into()] = 1.into();
+        m.r[4.into()] = program.into();
+        m.act();
+        m.act();
+        m.act();
+        let got = m.peek();
 
         assert_eq!(expected, got);
     }

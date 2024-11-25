@@ -4,7 +4,7 @@ use crate::macros::{
 use std::ops::BitAndAssign;
 
 #[expect(non_camel_case_types)]
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct u3(u8);
 impl_into!(u3, u8);
 impl_into_extend!(u3, usize);
@@ -32,7 +32,7 @@ set_max!(u9, 0b111111111);
 impl_bitand_assign!(u9);
 
 #[expect(non_camel_case_types)]
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct u25(u32);
 impl_into!(u25, u32);
 impl_from_narrow!(u25, u32);
